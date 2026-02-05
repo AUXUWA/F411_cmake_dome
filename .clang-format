@@ -1,0 +1,15 @@
+---
+Language:        Cpp
+BasedOnStyle:    LLVM
+
+
+BreakBeforeBraces: Attach     # 大括号紧跟行末 
+ColumnLimit:     96
+
+# --- 连续赋值对齐 ---
+AlignConsecutiveAssignments:
+  Enabled:         true
+  AcrossEmptyLines: true
+  AcrossComments:  true
+
+...

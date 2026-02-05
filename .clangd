@@ -1,0 +1,13 @@
+Diagnostics:
+  Suppress:
+    - unused-includes
+    - unknown_typename
+    - unknown_typename_suggest
+    - typename_requires_specqual
+CompileFlags:
+  Add:
+    - "--target=arm-none-eabi"
+    - '-ferror-limit=0'
+    - '-Wno-implicit-int'
+    - "-ID:/Tool/arm-gnu-toolchain-15.2.rel1-mingw-w64-i686-arm-none-eabi/arm-none-eabi/include"
+    - "-ID:/Tool/arm-gnu-toolchain-15.2.rel1-mingw-w64-i686-arm-none-eabi/lib/gcc/arm-none-eabi/15.2.1/include"

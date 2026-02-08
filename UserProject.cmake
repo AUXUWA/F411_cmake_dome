@@ -9,7 +9,10 @@ file(GLOB_RECURSE USER_RECURSE_SOURCES
     CONFIGURE_DEPENDS 
     "App/*.c" 
     "Bsp/*.c"
+    "App/*.cpp" 
+    "Bsp/*.cpp"
     "Middlewares/Third_Party/MultiButton/*.c"
+    "Middlewares/Third_Party/MultiButton/*.cpp"
 )
 
 # ------------------------------------------------------------------------------

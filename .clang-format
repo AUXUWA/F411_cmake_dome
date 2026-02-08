@@ -2,14 +2,18 @@
 Language:        Cpp
 BasedOnStyle:    LLVM
 
-
-BreakBeforeBraces: Attach     # 大括号紧跟行末 
+# --- 格式风格 ---
+BreakBeforeBraces: Attach    # 大括号紧跟行末 
 ColumnLimit:     96
+
+# --- 缩进配置  ---
+UseTab:          Always      # 强制使用 Tab 字符 (\t)
+IndentWidth:     4           # 缩进层级宽度 (显示为4格)
+TabWidth:        4           # Tab 字符的显示宽度
 
 # --- 连续赋值对齐 ---
 AlignConsecutiveAssignments:
-  Enabled:         true
+  Enabled:          true
   AcrossEmptyLines: true
-  AcrossComments:  true
-
+  AcrossComments:   true
 ...

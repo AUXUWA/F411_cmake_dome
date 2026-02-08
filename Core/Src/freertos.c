@@ -25,12 +25,13 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "RGB.h"
+#include "lcd.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+extern SPI_HandleTypeDef hspi3;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -45,7 +46,21 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
+static uint16_t line_buffer[240];
 
+lcd_io lcd_io_desc = {
+    .spi = &hspi3,
+    .rst = {LCD_RST_GPIO_Port, LCD_RST_Pin, 0},
+    .bl  = {LCD_PWR_GPIO_Port, LCD_PWR_Pin, 0},
+    .cs  = {LCD_CS_GPIO_Port, LCD_CS_Pin, 0},
+    .dc  = {LCD_DC_GPIO_Port,  LCD_DC_Pin,  0},
+    .te  = { /* TE */ }
+};
+
+lcd lcd_desc = {
+    .io = &lcd_io_desc,
+    .line_buffer = line_buffer,
+};
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -54,6 +69,20 @@ const osThreadAttr_t defaultTask_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
+/* Definitions for RGBTask */
+osThreadId_t RGBTaskHandle;
+const osThreadAttr_t RGBTask_attributes = {
+  .name = "RGBTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for LCDTask */
+osThreadId_t LCDTaskHandle;
+const osThreadAttr_t LCDTask_attributes = {
+  .name = "LCDTask",
+  .stack_size = 512 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -61,8 +90,39 @@ const osThreadAttr_t defaultTask_attributes = {
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void *argument);
+void RGB_StartTask(void *argument);
+void LCD_StartTask(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
+
+/* Hook prototypes */
+void configureTimerForRunTimeStats(void);
+unsigned long getRunTimeCounterValue(void);
+void vApplicationTickHook(void);
+
+/* USER CODE BEGIN 1 */
+/* Functions needed when configGENERATE_RUN_TIME_STATS is on */
+__weak void configureTimerForRunTimeStats(void) {
+  CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+  DWT->CYCCNT = 0;
+  DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+}
+
+__weak unsigned long getRunTimeCounterValue(void) { 
+  return DWT->CYCCNT; 
+}
+/* USER CODE END 1 */
+
+/* USER CODE BEGIN 3 */
+void vApplicationTickHook( void )
+{
+   /* This function will be called by each tick interrupt if
+   configUSE_TICK_HOOK is set to 1 in FreeRTOSConfig.h. User code can be
+   added here, but the tick hook is called from an interrupt context, so
+   code must not attempt to block, and only the interrupt safe FreeRTOS API
+   functions can be used (those that end in FromISR()). */
+}
+/* USER CODE END 3 */
 
 /**
   * @brief  FreeRTOS initialization
@@ -94,6 +154,12 @@ void MX_FREERTOS_Init(void) {
   /* creation of defaultTask */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
+  /* creation of RGBTask */
+  RGBTaskHandle = osThreadNew(RGB_StartTask, NULL, &RGBTask_attributes);
+
+  /* creation of LCDTask */
+  LCDTaskHandle = osThreadNew(LCD_StartTask, NULL, &LCDTask_attributes);
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
@@ -120,6 +186,73 @@ void StartDefaultTask(void *argument)
     osDelay(1);
   }
   /* USER CODE END StartDefaultTask */
+}
+
+/* USER CODE BEGIN Header_RGB_StartTask */
+/**
+* @brief Function implementing the RGBTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_RGB_StartTask */
+void RGB_StartTask(void *argument)
+{
+  /* USER CODE BEGIN RGB_StartTask */
+  uint8_t color_index = 0;
+  /* Infinite loop */
+  for(;;)
+  {
+    RGB_SetColor(color_index);
+    
+    color_index++;
+    if(color_index >= 7) {
+        color_index = 0;
+    }
+    osDelay(1000); 
+  }
+  /* USER CODE END RGB_StartTask */
+}
+
+/* USER CODE BEGIN Header_LCD_StartTask */
+/**
+* @brief Function implementing the LCDTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_LCD_StartTask */
+void LCD_StartTask(void *argument)
+{
+  /* USER CODE BEGIN LCD_StartTask */
+  lcd_init_dev(&lcd_desc, LCD_1_14_INCH, LCD_ROTATE_90);
+  
+  lcd_print(&lcd_desc, 0, 20, "> Boring_TECH");
+  lcd_print(&lcd_desc, 0, 40, "> IPS LCD 1.14inch 240x135");
+  lcd_print(&lcd_desc, 0, 60, "> STM32F411CEU6");
+  lcd_print(&lcd_desc, 0, 80, "> 2026/2/8");
+
+  /* FPS 统计变量 */
+  uint32_t frame_count = 0;
+  uint32_t last_tick = HAL_GetTick();
+  float current_fps = 0.0f; 
+
+  /* Infinite loop */
+  for(;;)
+  {
+    lcd_print(&lcd_desc, 0, 100, "> FPS: %.1f   ", current_fps);
+
+    frame_count++;
+
+    if (HAL_GetTick() - last_tick >= 1000)
+    {
+      current_fps = (float)frame_count; 
+      frame_count = 0;                  
+      last_tick = HAL_GetTick();        
+    }
+
+    // osDelay(1000); // 
+    osDelay(1); 
+  }
+  /* USER CODE END LCD_StartTask */
 }
 
 /* Private application code --------------------------------------------------*/

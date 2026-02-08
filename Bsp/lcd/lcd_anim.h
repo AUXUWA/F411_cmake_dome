@@ -1,53 +1,52 @@
 #ifndef __LCD_ANIM_H__
 #define __LCD_ANIM_H__
 
-#include "lcd.h"   // 确保包含了你的 lcd 驱动头文件
+#include "lcd.h"
 #include <math.h>
-#include <stdint.h>
+#include <string.h>
 
-/* --- 数据结构定义 --- */
+/* --- 配置参数 --- */
+#define LCD_WIDTH   240
+#define LCD_HEIGHT  135
 
-// 3D 点 (浮点数用于计算)
+/* --- 数据结构 --- */
 typedef struct { float x, y, z; } Point3D;
-
-// 2D 点 (整数用于屏幕坐标)
 typedef struct { int16_t x, y; } Point2D;
 
-// 立方体动画句柄
+/* 立方体动画对象 */
 typedef struct {
-    // 1. 关联对象
-    lcd* lcd_handle;    // 指向 LCD 驱动的指针
+    // 关联的 LCD 句柄
+    lcd* lcd_handle;
+    
+    // 属性
+    float size;         // 大小
+    uint16_t color;     // 颜色
+    int16_t cx, cy;     // 屏幕位置 (Center X, Y)
+    float speed;        // 旋转速度
 
-    // 2. 外观参数 (初始化时设置)
-    float size;         // 立方体大小 (例如 30.0)
-    uint16_t color;     // 线条颜色
-    int16_t cx;         // 中心位置 X (Center X)
-    int16_t cy;         // 中心位置 Y (Center Y)
-    float speed;        // 旋转速度 (默认 0.05)
-
-    // 3. 内部状态 (运行时自动更新，无需手动修改)
-    float angX, angY, angZ; // 当前三轴旋转角度
-    Point2D prev_points[8]; // 保存上一帧的 2D 坐标 (用于擦除)
-    uint8_t is_first_frame; // 标记是否为第一帧
+    // 内部状态
+    float angX, angY, angZ;
 } lcd_anim_cube_t;
 
-/* --- 函数原型 --- */
+/* --- 函数接口 --- */
 
 /**
- * @brief 初始化一个立方体动画对象
- * @param anim  动画句柄指针
- * @param plcd  LCD 驱动句柄
- * @param size  立方体边长的一半 (推荐 20~40)
- * @param color 线条颜色
- * @param x     屏幕中心 X 坐标
- * @param y     屏幕中心 Y 坐标
+ * @brief 初始化动画模块 (分配/清空显存)
+ */
+void lcd_anim_init_buffer(void);
+
+/**
+ * @brief 初始化一个立方体
  */
 void lcd_anim_cube_init(lcd_anim_cube_t* anim, lcd* plcd, float size, uint16_t color, int16_t x, int16_t y);
 
 /**
- * @brief 运行一帧动画 (计算 -> 擦除旧线 -> 绘制新线)
- * @note  请在 while(1) 循环中调用
+ * @brief 核心函数：
+ * 1. 清空显存
+ * 2. 计算并绘制立方体到显存
  */
-void lcd_anim_cube_run(lcd_anim_cube_t* anim);
+void lcd_anim_cube_update(lcd_anim_cube_t* anim);
+void lcd_print_ram(lcd* plcd, uint16_t x, uint16_t y, const char *fmt, ...);
+void lcd_anim_flush(lcd* plcd);
 
-#endif /* __LCD_ANIM_H__ */
+#endif

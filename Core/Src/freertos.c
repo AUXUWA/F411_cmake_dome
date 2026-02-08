@@ -62,6 +62,8 @@ lcd lcd_desc = {
     .io = &lcd_io_desc,
     .line_buffer = line_buffer,
 };
+
+extern uint16_t g_gram[];
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -223,33 +225,42 @@ void RGB_StartTask(void *argument)
 /* USER CODE END Header_LCD_StartTask */
 void LCD_StartTask(void *argument)
 {
-    /* USER CODE BEGIN LCD_StartTask */
-    lcd_init_dev(&lcd_desc, LCD_1_14_INCH, LCD_ROTATE_90);
-    lcd_clear(&lcd_desc, BLACK);
-    
-    lcd_print(&lcd_desc, 5, 5, "STM32F411");
-    lcd_print(&lcd_desc, 160, 5, "FPS: N/A");
+  /* USER CODE BEGIN LCD_StartTask */
+  
+  lcd_init_dev(&lcd_desc, LCD_1_14_INCH, LCD_ROTATE_90);
+  lcd_anim_init_buffer(); // 清空显存
 
-    lcd_anim_cube_t my_cube;
-    lcd_anim_cube_init(&my_cube, &lcd_desc, 25.0f, LIGHTBLUE, 120, 80);
+  lcd_anim_cube_t cube1, cube2;
+  lcd_anim_cube_init(&cube1, &lcd_desc, 25.0f, RED, 70, 70);
+  lcd_anim_cube_init(&cube2, &lcd_desc, 25.0f, LIGHTBLUE, 170, 70);
 
-    uint32_t frame_count = 0;
-    uint32_t last_tick = HAL_GetTick();
+  uint32_t frame_count = 0;
+  uint32_t last_tick = HAL_GetTick();
+  uint32_t fps = 0;
 
-    for(;;)
+  for(;;)
+  {
+    memset(g_gram, 0, LCD_WIDTH * LCD_HEIGHT * 2);
+
+    lcd_anim_cube_update(&cube1);
+    lcd_anim_cube_update(&cube2);
+
+    frame_count++;
+    if (HAL_GetTick() - last_tick >= 1000)
     {
-        lcd_anim_cube_run(&my_cube);
-
-        frame_count++;
-        if (HAL_GetTick() - last_tick >= 1000) {
-            lcd_print(&lcd_desc, 160, 5, "FPS:%d  ", frame_count);
-            frame_count = 0;
-            last_tick = HAL_GetTick();
-        }
-
-        osDelay(1);
+        fps = frame_count;
+        frame_count = 0;
+        last_tick = HAL_GetTick();
+        
+        lcd_print_ram(&lcd_desc, 5, 5, "FPS:%d ", fps);
+    } else {
+        lcd_print_ram(&lcd_desc, 5, 5, "FPS:%d ", fps);
     }
-    /* USER CODE END LCD_StartTask */
+
+    lcd_anim_flush(&lcd_desc);
+    osDelay(1);
+  }
+  /* USER CODE END LCD_StartTask */
 }
 
 /* Private application code --------------------------------------------------*/
